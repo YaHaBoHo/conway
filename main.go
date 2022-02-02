@@ -1,33 +1,37 @@
 package main
 
 import (
+	"conway/config"
+	"conway/utilities"
 	"fmt"
 	"time"
 )
 
-const GridSize int = 512
-const Rounds int = 1000
-
-func startingGrid() [GridSize][GridSize]int {
-	// Initialize
-	var grid [GridSize][GridSize]int
-	// Insert a pentomino pattern
-	gridCenter := GridSize / 2
-	grid[gridCenter-1][gridCenter-1] = 1
-	grid[gridCenter-1][gridCenter] = 1
-	grid[gridCenter][gridCenter] = 1
-	grid[gridCenter][gridCenter+1] = 1
-	grid[gridCenter+1][gridCenter] = 1
-	// Done
-	return grid
+func emptyGrid() *[config.GridSize][config.GridSize]int {
+	var grid [config.GridSize][config.GridSize]int
+	return &grid
 }
 
-func updateAlive(grid *[GridSize][GridSize]int, row int, col int) int {
+func startingGrid() *[config.GridSize][config.GridSize]int {
+	// Initialize
+	var grid [config.GridSize][config.GridSize]int
+	// Insert a pentomino pattern
+	gridCenter := config.GridSize / 2
+	grid[gridCenter-1][gridCenter+1] = 1
+	grid[gridCenter-1][gridCenter] = 1
+	grid[gridCenter][gridCenter] = 1
+	grid[gridCenter][gridCenter-1] = 1
+	grid[gridCenter+1][gridCenter] = 1
+	// Done
+	return &grid
+}
+
+func updateAlive(grid *[config.GridSize][config.GridSize]int, row int, col int) int {
 	var numNeighbors int = 0
-	var cMin = (col - 1 + GridSize) % GridSize
-	var cMax = (col + 1) % GridSize
+	var cMin = (col - 1 + config.GridSize) % config.GridSize
+	var cMax = (col + 1) % config.GridSize
 	// [1] Top row, no check needed
-	var rMin = (row - 1 + GridSize) % GridSize
+	var rMin = (row - 1 + config.GridSize) % config.GridSize
 	numNeighbors += grid[rMin][cMin]
 	numNeighbors += grid[rMin][col]
 	numNeighbors += grid[rMin][cMax]
@@ -41,7 +45,7 @@ func updateAlive(grid *[GridSize][GridSize]int, row int, col int) int {
 		return 0
 	}
 	// [3] Bottom row, check > 3 after each operation
-	var rMax = (row + 1) % GridSize
+	var rMax = (row + 1) % config.GridSize
 	numNeighbors += grid[rMax][cMin]
 	if numNeighbors > 3 {
 		return 0
@@ -61,17 +65,17 @@ func updateAlive(grid *[GridSize][GridSize]int, row int, col int) int {
 	return 0
 }
 
-func updateDead(grid *[GridSize][GridSize]int, row int, col int) int {
+func updateDead(grid *[config.GridSize][config.GridSize]int, row int, col int) int {
 	var numNeighbors int = 0
-	var cMin = (col - 1 + GridSize) % GridSize
-	var cMax = (col + 1) % GridSize
+	var cMin = (col - 1 + config.GridSize) % config.GridSize
+	var cMax = (col + 1) % config.GridSize
 	// [1] Top row, no check needed
-	var rMin = (row - 1 + GridSize) % GridSize
+	var rMin = (row - 1 + config.GridSize) % config.GridSize
 	numNeighbors += grid[rMin][cMin]
 	numNeighbors += grid[rMin][col]
 	numNeighbors += grid[rMin][cMax]
 	// [2] Bottom row, check > 3 after each operation
-	var rMax = (row + 1) % GridSize
+	var rMax = (row + 1) % config.GridSize
 	numNeighbors += grid[rMax][cMin]
 	if numNeighbors > 3 {
 		return 0
@@ -105,21 +109,24 @@ func main() {
 	var grid = startingGrid()
 	// Run
 	start := time.Now()
-	for round := 0; round < Rounds; round++ {
-		var newGrid [GridSize][GridSize]int
-		for row := 0; row < GridSize; row++ {
-			for col := 0; col < GridSize; col++ {
+	for round := 0; round < config.Rounds; round++ {
+		newGrid := emptyGrid()
+		for row := 0; row < config.GridSize; row++ {
+			for col := 0; col < config.GridSize; col++ {
 				if grid[row][col] == 1 {
-					newGrid[row][col] = updateAlive(&grid, row, col)
+					newGrid[row][col] = updateAlive(grid, row, col)
 				} else {
-					newGrid[row][col] = updateDead(&grid, row, col)
+					newGrid[row][col] = updateDead(grid, row, col)
 				}
 			}
 		}
 		grid = newGrid
 	}
 	taken := time.Now().Sub(start).Seconds()
-	fmt.Println("Time : ", taken)
-	fmt.Println("RPS  : ", float64(Rounds)/taken)
-	fmt.Println("CPS  : ", float64(Rounds*GridSize*GridSize)/taken)
+	fmt.Printf("Completed a %vx%v grid\n", config.GridSize, config.GridSize)
+	fmt.Printf("Rounds    : %v\n", config.Rounds)
+	fmt.Printf("Time      : %v\n", taken)
+	fmt.Printf("Rounds/s  : %v\n", float64(config.Rounds)/taken)
+	fmt.Printf("Cells/s   : %v\n", float64(config.Rounds*config.GridSize*config.GridSize)/taken)
+	fmt.Printf("RLE       : %v", utilities.ToRLE(grid))
 }
