@@ -5,7 +5,12 @@ import (
 	"fmt"
 )
 
-func toRleItem(state int, count int) string {
+type RLE struct {
+	header string
+	data   string
+}
+
+func rleItem(state int, count int) string {
 	// Get tag
 	var rleTag string
 	if state == 1 {
@@ -21,7 +26,7 @@ func toRleItem(state int, count int) string {
 	return rleTag
 }
 
-func toRleEnding(count int) string {
+func rleEnding(count int) string {
 	// If count > 1, return <count>$
 	if count > 1 {
 		return fmt.Sprintf("%d$", count)
@@ -30,7 +35,7 @@ func toRleEnding(count int) string {
 	return "$"
 }
 
-func ToRLE(grid *[config.GridSize][config.GridSize]int) string {
+func ToRLE(grid *[config.GridSize][config.GridSize]int) RLE {
 	var rleData string
 	var rleHeader = fmt.Sprintf("x=%d,y=%d,rule=B3/S23", config.GridSize, config.GridSize)
 	var newLines = 0
@@ -44,14 +49,14 @@ func ToRLE(grid *[config.GridSize][config.GridSize]int) string {
 			if aState == grid[row][col] {
 				aCount += 1
 			} else {
-				rleRow += toRleItem(aState, aCount)
+				rleRow += rleItem(aState, aCount)
 				aState = grid[row][col]
 				aCount = 1
 			}
 		}
 		// Dump leftover accumulator
 		if aCount > 0 && aState == 1 {
-			rleRow += toRleItem(aState, aCount)
+			rleRow += rleItem(aState, aCount)
 		}
 		// If line has cells, append to rle
 		if rleRow == "" {
@@ -59,7 +64,7 @@ func ToRLE(grid *[config.GridSize][config.GridSize]int) string {
 		} else {
 			// Dump line endings
 			if newLines > 0 {
-				rleData += toRleEnding(newLines)
+				rleData += rleEnding(newLines)
 			}
 			newLines = 1
 			rleData += rleRow
@@ -68,7 +73,7 @@ func ToRLE(grid *[config.GridSize][config.GridSize]int) string {
 	// Finalize RLE
 	rleData += "!"
 	// Done
-	return rleHeader + "\n" + FormatText(rleData, 70)
+	return RLE{header: rleHeader, data: rleData}
 }
 
 func FromRLE(rle string) *[config.GridSize][config.GridSize]int {

@@ -1,4 +1,4 @@
 package config
 
-const GridSize int = 32
-const Rounds int = 32
+const GridSize int = 512
+const Rounds int = 1000

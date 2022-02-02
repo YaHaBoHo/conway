@@ -2,7 +2,6 @@ package main
 
 import (
 	"conway/config"
-	"conway/utilities"
 	"fmt"
 	"math"
 	"time"
@@ -130,5 +129,5 @@ func main() {
 	fmt.Printf("Rounds            : %v\n", config.Rounds)
 	fmt.Printf("Round time (avg)  : %v ms\n", 1000*int(taken)/config.Rounds)
 	fmt.Printf("Cell rate         : %v Mc/s\n", math.Round(totalCells/(taken*10000))/100)
-	fmt.Printf("\n<RLE>\n%v\n</RLE>", utilities.ToRLE(grid))
+	// fmt.Println(utilities.ToRLE(grid))
 }
