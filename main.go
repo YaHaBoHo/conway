@@ -7,14 +7,14 @@ import (
 	"time"
 )
 
-func emptyGrid() *[config.GridSize][config.GridSize]int {
-	var grid [config.GridSize][config.GridSize]int
+func emptyGrid() *[config.GridSize][config.GridSize]byte {
+	var grid [config.GridSize][config.GridSize]byte
 	return &grid
 }
 
-func startingGrid() *[config.GridSize][config.GridSize]int {
+func startingGrid() *[config.GridSize][config.GridSize]byte {
 	// Initialize
-	var grid [config.GridSize][config.GridSize]int
+	var grid [config.GridSize][config.GridSize]byte
 	// Insert a pentomino pattern
 	gridCenter := config.GridSize / 2
 	grid[gridCenter-1][gridCenter+1] = 1
@@ -26,8 +26,8 @@ func startingGrid() *[config.GridSize][config.GridSize]int {
 	return &grid
 }
 
-func updateAlive(grid *[config.GridSize][config.GridSize]int, row int, col int) int {
-	var numNeighbors int = 0
+func updateAlive(grid *[config.GridSize][config.GridSize]byte, row int, col int) byte {
+	var numNeighbors byte = 0
 	var cMin = (col - 1 + config.GridSize) % config.GridSize
 	var cMax = (col + 1) % config.GridSize
 	// [1] Top row, no check needed
@@ -65,8 +65,8 @@ func updateAlive(grid *[config.GridSize][config.GridSize]int, row int, col int) 
 	return 0
 }
 
-func updateDead(grid *[config.GridSize][config.GridSize]int, row int, col int) int {
-	var numNeighbors int = 0
+func updateDead(grid *[config.GridSize][config.GridSize]byte, row int, col int) byte {
+	var numNeighbors byte = 0
 	var cMin = (col - 1 + config.GridSize) % config.GridSize
 	var cMax = (col + 1) % config.GridSize
 	// [1] Top row, no check needed
