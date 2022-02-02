@@ -2,7 +2,7 @@ package utilities
 
 import (
 	"conway/config"
-	"strconv"
+	"fmt"
 )
 
 func toRleItem(state int, count int) string {
@@ -15,7 +15,7 @@ func toRleItem(state int, count int) string {
 	}
 	// If count > 1, return <count><tag>
 	if count > 1 {
-		return strconv.Itoa(count) + rleTag
+		return fmt.Sprintf("%d%s", count, rleTag)
 	}
 	// Else, just return <tag>
 	return rleTag
@@ -24,18 +24,19 @@ func toRleItem(state int, count int) string {
 func toRleEnding(count int) string {
 	// If count > 1, return <count>$
 	if count > 1 {
-		return strconv.Itoa(count) + "$"
+		return fmt.Sprintf("%d$", count)
 	}
 	// Else, just return $
 	return "$"
 }
 
 func ToRLE(grid *[config.GridSize][config.GridSize]int) string {
-	var rle string
+	var rleData string
+	var rleHeader = fmt.Sprintf("x=%d,y=%d,rule=B3/S23", config.GridSize, config.GridSize)
 	var newLines = 0
 	for row := 0; row < config.GridSize; row++ {
 		// Initialize line
-		var rleLine string
+		var rleRow string
 		// Initialize accumulators
 		var aState = grid[row][0]
 		var aCount = 0
@@ -43,31 +44,31 @@ func ToRLE(grid *[config.GridSize][config.GridSize]int) string {
 			if aState == grid[row][col] {
 				aCount += 1
 			} else {
-				rleLine += toRleItem(aState, aCount)
+				rleRow += toRleItem(aState, aCount)
 				aState = grid[row][col]
 				aCount = 1
 			}
 		}
 		// Dump leftover accumulator
 		if aCount > 0 && aState == 1 {
-			rleLine += toRleItem(aState, aCount)
+			rleRow += toRleItem(aState, aCount)
 		}
 		// If line has cells, append to rle
-		if rleLine == "" {
+		if rleRow == "" {
 			newLines += 1
 		} else {
 			// Dump line endings
 			if newLines > 0 {
-				rle += toRleEnding(newLines)
+				rleData += toRleEnding(newLines)
 			}
 			newLines = 1
-			rle += rleLine
+			rleData += rleRow
 		}
 	}
 	// Finalize RLE
-	rle += "!"
+	rleData += "!"
 	// Done
-	return rle
+	return rleHeader + "\n" + FormatText(rleData, 70)
 }
 
 func FromRLE(rle string) *[config.GridSize][config.GridSize]int {
