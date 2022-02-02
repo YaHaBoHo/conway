@@ -10,7 +10,7 @@ type RLE struct {
 	data   string
 }
 
-func rleItem(state int, count int) string {
+func rleItem(state byte, count int) string {
 	// Get tag
 	var rleTag string
 	if state == 1 {
@@ -35,7 +35,7 @@ func rleEnding(count int) string {
 	return "$"
 }
 
-func ToRLE(grid *[config.GridSize][config.GridSize]int) RLE {
+func ToRLE(grid *[config.GridSize][config.GridSize]byte) RLE {
 	var rleData string
 	var rleHeader = fmt.Sprintf("x=%d,y=%d,rule=B3/S23", config.GridSize, config.GridSize)
 	var newLines = 0
