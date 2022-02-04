@@ -2,14 +2,16 @@ package rle
 
 import (
 	"bufio"
-	"conway/config"
+	"conway/conway"
 	"conway/utilities"
 	"fmt"
 	"os"
 	"strings"
 )
 
-const MaxLength = 70
+const FileLineSize = 70
+const SummaryLength = 128
+
 const LiveChar = "o"
 const DeadChar = "b"
 const NewLine = "$"
@@ -20,13 +22,21 @@ type RLE struct {
 	Data   string
 }
 
+func Summary(rle RLE) string {
+	rleLen := len(rle.Data)
+	if rleLen > SummaryLength {
+		return fmt.Sprintf("%s...%s (%d)", rle.Data[:SummaryLength/2], rle.Data[rleLen-SummaryLength/2:], rleLen)
+	}
+	return fmt.Sprintf("%s (%d)", rle.Data, rleLen)
+}
+
 func formatData(rawText string) string {
 	// Format RLE
 	var fmtText string
-	for c := 0; c < len(rawText); c += MaxLength {
-		var cMax = c + MaxLength
+	for c := 0; c < len(rawText); c += FileLineSize {
+		var cMax = c + FileLineSize
 		if cMax < len(rawText) {
-			fmtText += rawText[c:c+MaxLength] + "\n"
+			fmtText += rawText[c:c+FileLineSize] + "\n"
 		} else {
 			fmtText += rawText[c:]
 		}
@@ -59,28 +69,29 @@ func rleNewLine(count int) string {
 	return NewLine
 }
 
-func FromGrid(grid *[config.GridSize][config.GridSize]byte) RLE {
+func FromWorld(world *conway.World) RLE {
 	var rleData string
-	var rleHeader = fmt.Sprintf("x=%d,y=%d,rule=B3/S23", config.GridSize, config.GridSize)
+	var rleHeader = fmt.Sprintf("x=%d,y=%d,rule=B3/S23", world.Size, world.Size)
 	var newLines = 0
-	for row := 0; row < config.GridSize; row++ {
+	for row := 0; row < world.Cells; row += world.Size {
 		// Initialize line
 		var rleRow string
-		// Initialize accumulators
-		var aState = grid[row][0]
-		var aCount = 0
-		for col := 0; col < config.GridSize; col++ {
-			if aState == grid[row][col] {
-				aCount += 1
+		// Initialize buffers
+		var bufferState = world.Grid[row] & 1
+		var bufferCount = 0
+		for col := 0; col < world.Size; col++ {
+			cellState := world.Grid[row+col] & 1
+			if bufferState == cellState {
+				bufferCount += 1
 			} else {
-				rleRow += rleItem(aState, aCount)
-				aState = grid[row][col]
-				aCount = 1
+				rleRow += rleItem(bufferState, bufferCount)
+				bufferState = cellState
+				bufferCount = 1
 			}
 		}
-		// Dump leftover accumulator
-		if aCount > 0 && aState == 1 {
-			rleRow += rleItem(aState, aCount)
+		// Dump leftover buffer
+		if bufferCount > 0 && bufferState == 1 {
+			rleRow += rleItem(bufferState, bufferCount)
 		}
 		// If line has cells, append to rle
 		if rleRow == "" {
@@ -100,7 +111,7 @@ func FromGrid(grid *[config.GridSize][config.GridSize]byte) RLE {
 	return RLE{Header: rleHeader, Data: rleData}
 }
 
-func ToGrid(rle RLE) *[config.GridSize][config.GridSize]byte {
+func ToWorld(rle RLE) *conway.World {
 	// Header
 	header := strings.Split(rle.Header, ",")
 	if len(header) < 3 {
@@ -111,16 +122,16 @@ func ToGrid(rle RLE) *[config.GridSize][config.GridSize]byte {
 	if len(headerCols) < 2 || len(headerRows) < 2 {
 		panic("Size descriptor in RLE header is invalid.")
 	}
-	rleCols := utilities.ParseInt(headerCols[1])
 	rleRows := utilities.ParseInt(headerRows[1])
-	if (rleRows != config.GridSize) || (rleCols != config.GridSize) {
-		panic(fmt.Sprintf("RLE size (%dx%d) does not match grid size (%dx%d)!", rleRows, rleCols, config.GridSize, config.GridSize))
+	rleCols := utilities.ParseInt(headerCols[1])
+	if rleRows != rleCols {
+		panic(fmt.Sprintf("Only square grids are supported yet, not %dx%d!", rleRows, rleCols))
 	}
 	// Data
-	var grid [config.GridSize][config.GridSize]byte
-	var col int
-	var row int
+	var col = 0
+	var row = 0
 	var numBuffer string
+	world := conway.EmptyWorld(rleRows)
 	for _, c := range rle.Data {
 		char := string(c)
 		if char == End {
@@ -128,14 +139,14 @@ func ToGrid(rle RLE) *[config.GridSize][config.GridSize]byte {
 		}
 		if char == LiveChar || char == DeadChar || char == NewLine {
 			// Buffer?
-			var repeat int = 1
+			var repeat = 1
 			if len(numBuffer) > 0 {
 				repeat = utilities.ParseInt(numBuffer)
 			}
 			if char == LiveChar {
-				// Dead cell(s)
+				// Living cell(s)
 				for i := 0; i < repeat; i++ {
-					grid[row][col+i] = 1
+					conway.SetStagedCell(world, row, col+i)
 				}
 				col += repeat
 			} else if char == DeadChar {
@@ -144,7 +155,7 @@ func ToGrid(rle RLE) *[config.GridSize][config.GridSize]byte {
 			} else if char == NewLine {
 				// New line
 				col = 0
-				row += repeat
+				row += repeat * world.Size
 			}
 			numBuffer = ""
 		} else if char == " " {
@@ -153,8 +164,10 @@ func ToGrid(rle RLE) *[config.GridSize][config.GridSize]byte {
 			numBuffer += char
 		}
 	}
+	// Commit
+	conway.Commit(world)
 	// Done
-	return &grid
+	return world
 }
 
 func FromFile(filePath string) RLE {
