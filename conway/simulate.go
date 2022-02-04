@@ -49,19 +49,13 @@ func SetStagedCell(world *World, row int, col int) {
 
 func updateStagedCell(world *World, row int, col int) {
 	cell := world.Grid[row+col]
-	neighbors := cell >> 1
 	// Process cells
-	if cell&1 == 0 {
-		// Dead cells
-		if neighbors == 3 {
-			SetStagedCell(world, row, col)
-		}
-	} else {
-		// Living cells
-		if neighbors == 2 || neighbors == 3 {
-			SetStagedCell(world, row, col)
-		}
+	if cell == 6 {
+		SetStagedCell(world, row, col)
+	} else if cell == 5 || cell == 7 {
+		SetStagedCell(world, row, col)
 	}
+
 }
 
 func updateGrid(world *World) {
