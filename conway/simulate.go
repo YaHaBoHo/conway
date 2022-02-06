@@ -74,31 +74,30 @@ func updateChunk(wg *sync.WaitGroup, world *World, rowStart int, rowEnd int) {
 
 }
 
-func updateGridConcurrently(world *World, concurrency int) {
+func UpdateGridConcurrently(world *World, concurrency int) {
 	// Prepare concurrency
 	var wg sync.WaitGroup
 	dmzCells := world.Size * DmzRows
-	chunkSize := (world.Cells - dmzCells*concurrency) / concurrency
-	// chunkSize := (len(grid) - threads*dmz) / threads
-	// world.Size * ((world.Size - concurrency*DmzRows) / concurrency)
-	if chunkSize < dmzCells {
+	// chunkCells := (world.Cells - dmzCells*concurrency) / concurrency
+	chunkCells := world.Size * ((world.Size - DmzRows) / concurrency)
+	if chunkCells < dmzCells {
 		// Playing it safe
 		panic("Too many threads for grid size!")
 	}
 	// Stage world
 	Stage(world)
 	// Compute : First pass
-	for row := 0; row < world.Cells; row += chunkSize {
+	for row := 0; row < world.Cells; row += chunkCells {
 		wg.Add(1)
-		if row+chunkSize < world.Cells {
-			go updateChunk(&wg, world, row+dmzCells, row+chunkSize)
+		if row+chunkCells < world.Cells {
+			go updateChunk(&wg, world, row+dmzCells, row+chunkCells)
 		} else {
 			go updateChunk(&wg, world, row+dmzCells, world.Cells)
 		}
 	}
 	wg.Wait()
 	// Compute : Second pass
-	for row := 0; row < world.Cells; row += chunkSize {
+	for row := 0; row < world.Cells; row += chunkCells {
 		wg.Add(1)
 		go updateChunk(&wg, world, row, row+dmzCells)
 	}
@@ -107,7 +106,7 @@ func updateGridConcurrently(world *World, concurrency int) {
 	Commit(world)
 }
 
-func updateGrid(world *World) {
+func UpdateGrid(world *World) {
 	// Stage
 	Stage(world)
 	// Compute
@@ -123,11 +122,11 @@ func updateGrid(world *World) {
 func Simulate(world *World, rounds int, concurrency int) {
 	if concurrency > 1 {
 		for r := 0; r < rounds; r++ {
-			updateGridConcurrently(world, concurrency)
+			UpdateGridConcurrently(world, concurrency)
 		}
 	} else {
 		for r := 0; r < rounds; r++ {
-			updateGrid(world)
+			UpdateGrid(world)
 		}
 	}
 }
